@@ -606,6 +606,15 @@ const SJT=(()=>{const per=15,hol=new Set(['2026-10-02','2026-10-20']),days=[];fo
   const wdone=Object.values(wday).reduce((a,b)=>a+b,0),wel=days.filter(d=>d<=wasof).length,fday={};
   const fp=new Map();D.fm.filter(f=>f.type==='WIDB'&&f.d>='2026-10-01'&&f.d<='2026-10-31'&&f.id!=null).forEach(f=>{if(!fp.has(f.id)||f.d<fp.get(f.id))fp.set(f.id,f.d);});fp.forEach(d=>{fday[d]=(fday[d]||0)+1;});
   return {per,days:days.length,tgt,done,el,rem,exp,gap,need:rem?gap/rem:0,asof,wdone,wcert,wasof,wel,wexp:per*wel,wday,fday,work:new Set(days)};})();
+const SJN=(()=>{const tgt=345,days=[];for(let d=1;d<=30;d++){const iso='2026-11-'+String(d).padStart(2,'0');if(new Date(iso+'T00:00:00').getDay()!==0)days.push(iso);}
+  const asof0=(D.fm_asof&&D.fm_asof>(D.att_asof||''))?D.fm_asof:D.att_asof,asof=asof0<'2026-11-01'?'2026-10-31':asof0,base=383,wasof=D.widb_asof,ws=(D.wsum||[]).find(w=>w.mid===70930),cert=ws?ws.rwe.cert+ws.ss.cert:0,
+   done=wasof>='2026-11-01'?Math.max(0,cert-base):0,el=days.filter(d=>d<=asof).length,rem=days.length-el,exp=tgt/days.length*el,
+   ppl=new Set(D.fm.filter(f=>f.type==='WIDB'&&f.d>='2026-11-01'&&f.id!=null).map(f=>f.id)).size;
+  return {tgt,days:days.length,done,cert,base,wasof,asof,el,rem,exp,gap:Math.max(0,tgt-done),need:rem?Math.max(0,tgt-done)/rem:0,per:tgt/days.length,ppl,fresh:wasof>='2026-11-01'};})();
+function sjnHTML(note){const t=SJN,pc=t.done/t.tgt*100;
+  return `<div class="tgt"><div><b>Sanjay Kumar</b><br><small class="m">${num(t.tgt)} WIDB certifications in November</small></div>
+   <div><div class="tbar"><i style="width:${Math.min(100,pc)}%;background:#F7B133"></i></div><small class="m">${t.fresh?`<b>${num(t.done)}</b> certified in November to ${fdn(t.wasof)}`:`<b>0</b> certified in November so far. The latest WIDB report is to ${fdn(t.wasof)}, before the month began (${num(t.cert)} certified in all)`} · ${t.el} working day${t.el===1?'':'s'} gone, so ${num(Math.round(t.exp))} expected by now · ${num(t.ppl)} people trained on WIDB in the MAT app in November</small></div>
+   <div style="text-align:right"><b style="font-size:18px">${pc.toFixed(1)}%</b> of ${num(t.tgt)}<br><small class="m">Gap ${num(t.gap)} · needs ${t.need.toFixed(1).replace('.0','')} a day for ${t.rem} working days</small></div></div>`+(note?`<p class="note">November has ${t.days} working days (all days except Sundays), so about ${t.per.toFixed(1)} certifications a day. Certifications in November = total certified on the WIDB platform minus ${num(t.base)}, the total in the last October report (to 29 Oct). It updates when a newer WIDB Registration Report is added. Add any November holidays and the daily rate will rise.</p>`:'');}
 function sjTargetHTML(note){const t=SJT,pc=t.done/t.tgt*100,ep=t.exp/t.tgt*100,ahead=t.done-t.exp;
   return `<div class="tgt"><div><b>Sanjay Kumar</b><br><b style="font-weight:400"></b><small class="m">MAT app forms · ${t.per} WIDB trainings a day × ${t.days} working days</small></div>
    <div><div class="tbar"><i style="width:${Math.min(100,pc)}%;background:#F7B133"></i></div><small class="m">${num(t.done)} people trained on WIDB in October to ${fdn(t.asof)} · ${t.el} working days gone, so ${num(t.exp)} expected by now (${ahead>=0?'ahead by '+num(ahead):'behind by '+num(-ahead)})</small></div>
@@ -616,6 +625,7 @@ function sjTargetHTML(note){const t=SJT,pc=t.done/t.tgt*100,ep=t.exp/t.tgt*100,a
   (()=>{const ds=[...new Set([...Object.keys(t.wday),...Object.keys(t.fday).filter(d=>d<=t.asof)])].sort().reverse();return `<h3 style="margin:16px 0 4px;font-size:15px">Day by day, WIDB actual against the MAT app</h3><div class="tw" style="max-height:none;overflow-x:auto"><table class="t plain"><thead><tr><th>Date</th><th class="num">WIDB actual (registered)</th><th class="num">MAT app (people trained)</th><th class="num">Daily target</th><th class="num">WIDB actual vs target</th></tr></thead><tbody>`+ds.map(d=>{const w=d<=t.wasof?(t.wday[d]||0):null,wk=t.work.has(d);return `<tr><td>${fdn(d)}${wk?'':' <span class="chip">No target day</span>'}</td><td class="num">${w==null?'–':w}</td><td class="num">${t.fday[d]||0}</td><td class="num">${wk?t.per:'–'}</td><td class="num">${w==null||!wk?'–':(w-t.per>0?'+':'')+(w-t.per)}</td></tr>`;}).join('')+`<tr><td><b>Total</b></td><td class="num"><b>${num(t.wdone)}</b></td><td class="num"><b>${num(Object.entries(t.fday).filter(([d])=>d<=t.asof).reduce((a,[,v])=>a+v,0))}</b></td><td class="num"><b>${num(t.wexp)}</b></td><td class="num"><b>${t.wdone-t.wexp>=0?'+':''}${t.wdone-t.wexp}</b></td></tr></tbody></table></div>`;})()+(note?`<p class="note">Working days are all days in October except Sundays (4, 11, 18, 25) and the 2 and 20 Oct holidays: ${t.days} days. MAT app forms count each person once, from the WIDB training forms. WIDB actual counts each person once on the date their WIDB registration form was filled (WIDB Registration Report, saved forms, 1 Oct to ${fdn(t.wasof)}). Certified is the platform total and can differ slightly from registrations.</p>`:'');}
 /* ====================== RWE SALES ====================== */
 const BN=['Delivered','To be delivered','Hold','Rejected'], BCOL=['#F7B133','#9A6400','#8C8C8C','#C94B4B'];
+const TGM={6:{n:'October',lo:183,hi:213,dim:31,t:null},7:{n:'November',lo:214,hi:243,dim:30,t:{'Ravi Kumar':1500000,'Kamal Singh Bansiwal':1000000,'Manish':1000000}}};
 const SMON=['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'];
 function viewSales(){
   const SD=D.sales, RW=SD.rw, L=SD.lines, root=$('#v-sales'), NL=L.length;
@@ -626,7 +636,7 @@ function viewSales(){
   const PRE=SD.pre||[];
   const delIn=l=>{const x=l[7];if(l[4]!==0||x<0)return false;if(S.mon!=='All'&&(bd(x).getMonth()-3)!==+S.mon)return false;const ds=dAdd('2026-04-01',x);if(S.df&&ds<S.df)return false;if(S.dt&&ds>S.dt)return false;return true;};
   const lastDay=Math.round((new Date(SD.asof+'T00:00:00')-new Date(2026,3,1))/864e5);
-  const S={tab:'ov',mat:'All',block:'All',cat:'All',rc:'All',meta:'All',mon:'All',grain:'month',meas:'val',tmode:'del',q:'',sel:null,df:'',dt:''};
+  const S={tab:'ov',mat:'All',block:'All',cat:'All',rc:'All',meta:'All',mon:'All',grain:'month',meas:'val',tmode:'del',tm:7,q:'',sel:null,df:'',dt:''};
   const blocks=uniq(RW.map(r=>r.b)).sort(), matsAll=SD.mats;
   const dstr=d=>{const x=bd(d);return x.getDate()+' '+MON[x.getMonth()];};
   root.innerHTML=`
@@ -644,7 +654,7 @@ function viewSales(){
    <li><b>RWE categories</b> (A, B, C1, C2) come from the Business Village Visit form (5 Sep to 26 Oct) and the RWE Category Form (from 30 Sep); the latest entry for each RWE is used. “Not categorised” means no entry in either form yet.</li>
    <li><b>Delivered by delivery date</b>: when you pick a month or dates, the Overview, RWEs, Products and MATs views also show what was delivered in that period on any order, whatever day it was placed. The delivery date is the Delivered date (the day the goods reached the RWE), or the Completed date where Delivered is blank. The Completed date is when the order was closed in the system, which can be days later.</li>
    <li><b>Repeat ordering</b> counts, for each RWE, the months from April 2026 in which she had at least one order that was not rejected. October is the month so far.</li>
-   <li>October targets: Ravi Kumar ₹19,00,000, Chandra Mohan Saini ₹11,00,000, Kamal Singh Bansiwal ₹14,00,000. Progress is measured on delivered value by default, and you can switch to delivered plus to be delivered.</li></ul></details>`;
+   <li>November targets: Ravi Kumar ₹15,00,000, Kamal Singh Bansiwal ₹10,00,000, Manish ₹10,00,000, Sanjay Kumar 345 WIDB certifications. October targets (closed): Ravi Kumar ₹19,00,000, Chandra Mohan Saini ₹11,00,000, Kamal Singh Bansiwal ₹14,00,000. Progress is measured on delivered value by default, and you can switch to delivered plus to be delivered.</li></ul></details>`;
   $('#sl-ctl').innerHTML=selectHTML('sl-m','Business MAT',['All',...matsAll],S.mat)+selectHTML('sl-b','Block',['All',...blocks],S.block)+selectHTML('sl-c','Category',['All',...SD.cats],S.cat)+
     catSel('sl-rc','RWE category',S.rc)+selectHTML('sl-mm','Meta Mall',[['All','All RWEs'],['Meta Malls','Meta Malls only'],['Others','Others']],S.meta)+selectHTML('sl-mo','Month',[['All','Apr to date'],...SMON.map((m,i)=>[String(i),m+' 2026'])],S.mon)+dateCtl('sl-d',S,'2026-04-01',SD.asof);
   const pcatOf=p=>SD.cats[SD.pcat[p]];
@@ -668,9 +678,9 @@ function viewSales(){
     return A;
   }
   const perLbl=()=>S.mon!=='All'?SMON[+S.mon]+' 2026':rangeOn(S)?rangeTxt(S):'the period';
-  function targets(){const T={};Object.keys(SD.targets).forEach(k=>T[k]={d:0,p:0,r:new Set(),e:0});
-    for(let i=0;i<NL;i++){const l=L[i];if(l[4]!==0||l[7]<183||l[7]>213||LM[i]===6)continue;const R=RW[l[0]];if(T[R.m])T[R.m].e+=l[6];}
-    for(let i=0;i<NL;i++){if(LM[i]!==6)continue;const R=RW[L[i][0]];if(!T[R.m])continue;const b=L[i][4],v=L[i][6];if(b===0)T[R.m].d+=v;else if(b===1)T[R.m].p+=v;if(b<=1)T[R.m].r.add(L[i][0]);}return T;}
+  function targets(){const G=TGM[S.tm],tg=G.t||SD.targets,T={};Object.keys(tg).forEach(k=>T[k]={d:0,p:0,r:new Set(),e:0});
+    for(let i=0;i<NL;i++){const l=L[i];if(l[4]!==0||l[7]<G.lo||l[7]>G.hi||LM[i]===S.tm)continue;const R=RW[l[0]];if(T[R.m])T[R.m].e+=l[6];}
+    for(let i=0;i<NL;i++){if(LM[i]!==S.tm)continue;const R=RW[L[i][0]];if(!T[R.m])continue;const b=L[i][4],v=L[i][6];if(b===0)T[R.m].d+=v;else if(b===1)T[R.m].p+=v;if(b<=1)T[R.m].r.add(L[i][0]);}return T;}
   function renderHead(A){
     const tot=sum(A.tv,x=>x),dn=A.to[0].size;
     $('#sl-head').innerHTML=(rangeOn(S)?`<span class="chip on">${esc(rangeTxt(S))}</span> `:'')+(A.rset.size?`<b>${inr(tot)}</b> was ordered by <b>${A.rset.size}</b> RWEs in this view. <b>${inr(A.tv[0])}</b> (${pct(A.tv[0],tot)}) has been delivered, <b>${inr(A.tv[1])}</b> is still to be delivered, <b>${inr(A.tv[2])}</b> is on hold and <b>${inr(A.tv[3])}</b> was rejected.`:'No orders match these filters.');
@@ -679,13 +689,13 @@ function viewSales(){
     const tot=sum(A.tv,x=>x),T=targets(),meta=(()=>{let m=0,o=0;for(let i=0;i<NL;i++){const [r,,,p,b,,v]=L[i],R=RW[r];if(b!==0)continue;if(S.mat!=='All'&&R.m!==S.mat)continue;if(S.block!=='All'&&R.b!==S.block)continue;if(S.cat!=='All'&&pcatOf(p)!==S.cat)continue;if(S.mon!=='All'&&LM[i]!==+S.mon)continue;if(!dOK(i))continue;if(R.mm)m+=v;else o+=v;}return [m,o];})();
     const kp=[{v:inr(tot),l:'Total ordered',d:num(A.allO.size)+' orders'},{v:inr(A.tv[0]),l:'Total orders delivered',d:A.to[0].size+' orders · '+pct(A.tv[0],tot)},...(A.per?[{v:inr(A.dd.t),l:'Delivered in '+perLbl()+', by delivery date',d:A.dd.o.size+' orders, any order date'}]:[]),{v:inr(A.tv[1]),l:'Orders to be delivered',d:A.to[1].size+' orders'},
       {v:inr(A.tv[2]),l:'Hold',d:A.to[2].size+' orders'},{v:inr(A.tv[3]),l:'Rejected',d:A.to[3].size+' orders · '+pct(A.tv[3],tot)},{v:A.rset.size,l:'RWEs ordering',d:'of '+RW.length+' with any order'}];
-    const rem=31-new Date(SD.asof+'T00:00:00').getDate();
-    const tg=Object.keys(SD.targets).map(k=>{const t=SD.targets[k],x=T[k],ach=S.tmode==='del'?x.d:x.d+x.p,gap=Math.max(0,t-ach);
-      return `<div class="tgt"><div><b>${esc(k)}</b><br><small class="m">${num(SD.mapped[k]||0)} RWEs and Sahelis mapped</small></div>
+    const G=TGM[S.tm],TGT=G.t||SD.targets,ad=new Date(SD.asof+'T00:00:00'),rem=ad.getMonth()===S.tm+3&&ad.getFullYear()===2026?Math.max(0,G.dim-ad.getDate()):0;
+    const tg=Object.keys(TGT).map(k=>{const t=TGT[k],x=T[k],ach=S.tmode==='del'?x.d:x.d+x.p,gap=Math.max(0,t-ach);
+      return `<div class="tgt"><div><b>${esc(k)}</b><br><small class="m">${SD.mapped[k]?num(SD.mapped[k])+' RWEs and Sahelis mapped':'No RWEs mapped yet in the mapping data'}</small></div>
         <div><div class="tbar"><i style="width:${Math.min(100,x.d/t*100)}%;background:#F7B133"></i><i style="left:${Math.min(100,x.d/t*100)}%;width:${S.tmode==='del'?0:Math.max(0,Math.min(100-x.d/t*100,x.p/t*100))}%;background:#9A6400"></i></div>
-        <small class="m">Delivered ${inr(x.d)} · to be delivered ${inr(x.p)} · ${x.r.size} RWEs ordering${x.e?` · plus ${inr(x.e)} delivered in Oct from earlier orders`:''}</small></div>
-        <div style="text-align:right"><b style="font-size:18px">${(ach/t*100).toFixed(1)}%</b> of ${inr(t)}<br><small class="m">Gap ${inr(gap)} · needs ${inr(gap/Math.max(1,rem))} a day for ${rem} days</small></div></div>`}).join('');
-    const tt=Object.keys(SD.targets).reduce((a,k)=>a+SD.targets[k],0),ta=Object.keys(SD.targets).reduce((a,k)=>a+(S.tmode==='del'?T[k].d:T[k].d+T[k].p),0);
+        <small class="m">Delivered ${inr(x.d)} · to be delivered ${inr(x.p)} · ${x.r.size} RWEs ordering${x.e?` · plus ${inr(x.e)} delivered in ${G.n.slice(0,3)} from earlier orders`:''}</small></div>
+        <div style="text-align:right"><b style="font-size:18px">${(ach/t*100).toFixed(1)}%</b> of ${inr(t)}<br><small class="m">Gap ${inr(gap)} · ${rem?'needs '+inr(gap/rem)+' a day for '+rem+' days':'month closed'}</small></div></div>`}).join('');
+    const tt=Object.keys(TGT).reduce((a,k)=>a+TGT[k],0),ta=Object.keys(TGT).reduce((a,k)=>a+(S.tmode==='del'?T[k].d:T[k].d+T[k].p),0);
     const per=S.mon!=='All'||rangeOn(S);
     let dw=0,dwn=new Set(),byM=[0,0,0,0,0,0,0,0,0];
     for(let i=0;i<NL+PRE.length;i++){const l=i<NL?L[i]:PRE[i-NL];if(!delIn(l))continue;const R=RW[l[0]];
@@ -698,14 +708,14 @@ function viewSales(){
       <div class="kpis"><div class="kpi"><div class="v">${inr(A.tv[0])}</div><div class="l">1. Delivered in ${esc(perTxt)}, on orders placed in ${esc(perTxt)}</div><div class="d">${A.to[0].size} orders · ${pct(A.tv[0],tot)} of ordered</div></div>
       <div class="kpi"><div class="v">${inr(dw)}</div><div class="l">2. Delivered in ${esc(perTxt)}, on all orders received</div><div class="d">${dwn.size} orders${earlier.length?' · includes '+inr(earlier.reduce((a,[,v])=>a+v,0))+' from orders placed before the period ('+earlier.map(([m,v])=>(m===8?'Mar':SMON[m])+' '+inr(v)).join(', ')+')':''}</div></div></div></div>`:`<div class="blk"><h3>Delivered, two ways</h3><p class="note">Pick a month or a date range above to see delivered in that period on the period’s own orders, and on all orders received (including orders placed earlier).</p></div>`;
     $('#sl-body').innerHTML=kpis(kp)+dbox+`
-    <div class="blk"><div style="display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap"><div><h3>October targets, Business MATs</h3><p class="note" style="margin:0">Progress to ${fdn(SD.asof)}. Not affected by the filters above.</p></div>${seg('sl-tm',[['del','Delivered'],['both','Delivered + to be delivered']],S.tmode)}</div>
-      ${tg}<div class="tgt"><div><b>All three MATs</b></div><div><div class="tbar"><i style="width:${Math.min(100,ta/tt*100)}%;background:#F7B133"></i></div></div><div style="text-align:right"><b style="font-size:18px">${(ta/tt*100).toFixed(1)}%</b> of ${inr(tt)}<br><small class="m">${inr(ta)} so far</small></div></div>
-      <h3 style="margin:16px 0 4px;font-size:15px">October training target</h3>${sjTargetHTML(1)}</div>
+    <div class="blk"><div style="display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap"><div><h3>${G.n} targets, Business MATs</h3><p class="note" style="margin:0">Progress to ${fdn(SD.asof)}. Not affected by the filters above.</p></div><div class="controls">${seg('sl-tmo',[['7','November'],['6','October']],String(S.tm))}${seg('sl-tm',[['del','Delivered'],['both','Delivered + to be delivered']],S.tmode)}</div></div>
+      ${tg}<div class="tgt"><div><b>All ${Object.keys(TGT).length} MATs</b></div><div><div class="tbar"><i style="width:${Math.min(100,ta/tt*100)}%;background:#F7B133"></i></div></div><div style="text-align:right"><b style="font-size:18px">${(ta/tt*100).toFixed(1)}%</b> of ${inr(tt)}<br><small class="m">${inr(ta)} so far</small></div></div>
+      <h3 style="margin:16px 0 4px;font-size:15px">November training target</h3>${sjnHTML(1)}<h3 style="margin:16px 0 4px;font-size:15px">October training target (closed)</h3>${sjTargetHTML(0)}</div>
     <div class="blk"><div style="display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap"><div><h3>Sales movement</h3><p class="note" style="margin:0">Orders placed from 1 Apr, split by delivery status.</p></div><div class="controls">${seg('sl-g',[['month','Month'],['week','Week'],['day','Day']],S.grain)}${seg('sl-ms',[['val','₹ Value'],['ord','Orders'],['rwe','Active RWEs']],S.meas)}</div></div><div id="sl-chart" style="margin-top:8px"></div></div>
     <div class="grid2e"><div class="blk"><h3>Status summary</h3><div class="tw" style="max-height:none"><table class="t plain"><thead><tr><th>Status</th><th class="num">Orders</th><th class="num">Value</th><th class="num">Share</th></tr></thead><tbody>${BN.map((n,i)=>`<tr><td><span class="dot" style="background:${BCOL[i]}"></span>${n}</td><td class="num">${A.to[i].size}</td><td class="num">${inr(A.tv[i])}</td><td class="num">${pct(A.tv[i],tot)}</td></tr>`).join('')}<tr><td><b>Total</b></td><td class="num"><b>${A.allO.size}</b></td><td class="num"><b>${inr(tot)}</b></td><td class="num"><b>100%</b></td></tr></tbody></table></div><p class="note" style="margin-top:6px">An order with items in different statuses is counted in each status, so the status rows can add up to more than the total.</p></div>
     <div class="blk" id="sl-rcb"></div>
     <div class="blk"><h3>Meta Malls and other RWEs</h3><p class="note">Delivered value in this view.</p><div class="tw" style="max-height:none"><table class="t plain"><thead><tr><th>Group</th><th class="num">Delivered</th><th class="num">Share</th></tr></thead><tbody><tr><td>${mmChip(1)}</td><td class="num">${inr(meta[0])}</td><td class="num">${pct(meta[0],meta[0]+meta[1])}</td></tr><tr><td>Other RWEs</td><td class="num">${inr(meta[1])}</td><td class="num">${pct(meta[1],meta[0]+meta[1])}</td></tr></tbody></table></div></div></div>`;
-    segBind('sl-tm',v=>{S.tmode=v;render();});segBind('sl-g',v=>{S.grain=v;drawChart(A);});segBind('sl-ms',v=>{S.meas=v;drawChart(A);});
+    segBind('sl-tm',v=>{S.tmode=v;render();});segBind('sl-tmo',v=>{S.tm=+v;render();});segBind('sl-g',v=>{S.grain=v;drawChart(A);});segBind('sl-ms',v=>{S.meas=v;drawChart(A);});
     drawChart(A);
     {const g=[...CATLIST,'none'].map(k=>{const rs=[...A.rw.entries()].filter(([r])=>k==='none'?!CATS[RW[r].id]:catOf(RW[r].id)===k),v=[0,0,0,0];rs.forEach(([,x])=>x.v.forEach((t,i)=>{v[i]+=t;}));return {k,n:rs.length,v,t:sum(v,t=>t)};});
      $('#sl-rcb').innerHTML=`<h3>Sales by RWE category</h3><p class="note">RWEs with orders in this view, by the category recorded for them. ${sum(g.filter(x=>x.k!=='none'),x=>x.n)} of ${A.rw.size} have a category.</p>${catLegend()}<div class="tw" style="max-height:none"><table class="t plain"><thead><tr><th>RWE category</th><th class="num">RWEs ordering</th><th class="num">Ordered</th><th class="num">Delivered</th><th class="num">To be delivered</th><th class="num">Hold</th><th class="num">Rejected</th><th class="num">Delivered %</th></tr></thead><tbody>${g.map(x=>`<tr><td>${x.k==='none'?'Not categorised':`<span class="chip c${x.k}">Cat ${x.k}</span>`}</td><td class="num">${x.n}</td><td class="num">${inr(x.t)}</td><td class="num">${inr(x.v[0])}</td><td class="num">${inr(x.v[1])}</td><td class="num">${inr(x.v[2])}</td><td class="num">${inr(x.v[3])}</td><td class="num">${pct(x.v[0],x.t)}</td></tr>`).join('')}</tbody></table></div>`;}
@@ -768,12 +778,12 @@ function viewSales(){
     table($('#pr-tab'),[{k:'name',h:'Product',f:o=>`<b>${esc(o.name)}</b>`},{k:'cat',h:'Category'},{k:'q',h:'Units',num:1,f:o=>num(o.q)},{k:'del',h:'Delivered',num:1,f:o=>inr(o.del)},...(A.per?[{k:'ddv',h:'Delivered in period, by delivery date',num:1,f:o=>inr(o.ddv)}]:[]),{k:'pen',h:'To be delivered',num:1,f:o=>inr(o.pen)},{k:'hold',h:'Hold',num:1,f:o=>inr(o.hold)},{k:'rej',h:'Rejected',num:1,f:o=>inr(o.rej)},{k:'rw',h:'RWEs',num:1}],rows,{sort:'del'});
   }
   function tabMat(A){
-    const T=targets();
-    $('#sl-body').innerHTML=`<div class="cards" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">${matsAll.map(m=>{const z=A.mat.get(m)||{v:[0,0,0,0],o:new Set(),r:new Set()},tot=sum(z.v,t=>t),tg=SD.targets[m],t=T[m];
+    const T=targets(),G=TGM[S.tm],TG2=G.t||SD.targets;
+    $('#sl-body').innerHTML=`<div class="cards" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">${matsAll.map(m=>{const z=A.mat.get(m)||{v:[0,0,0,0],o:new Set(),r:new Set()},tot=sum(z.v,t=>t),tg=TG2[m],t=T[m];
       return `<div class="mc" style="cursor:default"><div class="in"><h5>${esc(m)}</h5><div class="rl">${m==='No MAT assigned'||m==='Not in mapping'?'Not a tracked MAT':'Business MAT'} · ${num(SD.mapped[m]||0)} mapped</div>
       <div class="row"><div>Ordered<b>${inr(tot)}</b></div><div>Delivered<b>${inr(z.v[0])}</b></div><div>To be delivered<b>${inr(z.v[1])}</b></div><div>Hold<b>${inr(z.v[2])}</b></div><div>Rejected<b>${inr(z.v[3])}</b></div><div>RWEs ordering<b>${z.r.size}</b></div></div>
       ${A.per?`<div style="margin-top:8px;padding:6px 8px;background:#FEFAF7;border:1px solid #FCE5CD;border-radius:6px"><small class="m">Delivered in ${esc(perLbl())}, on all orders</small><br><b>${inr((A.dd.mat.get(m)||{v:0}).v)}</b> <small class="m">${(A.dd.mat.get(m)||{o:new Set()}).o.size} orders</small></div>`:''}
-      ${tg?`<div class="tbar" style="margin-top:10px"><i style="width:${Math.min(100,t.d/tg*100)}%;background:#F7B133"></i></div><small class="m">October: ${inr(t.d)} of ${inr(tg)} (${(t.d/tg*100).toFixed(1)}%)</small>`:''}
+      ${tg?`<div class="tbar" style="margin-top:10px"><i style="width:${Math.min(100,t.d/tg*100)}%;background:#F7B133"></i></div><small class="m">${G.n}: ${inr(t.d)} of ${inr(tg)} (${(t.d/tg*100).toFixed(1)}%)</small>`:''}
       <div style="margin-top:8px"><button class="btn" data-m="${esc(m)}">Filter to this MAT</button></div></div></div>`}).join('')}</div>`;
     $$('#sl-body .btn').forEach(b=>b.onclick=()=>{S.mat=b.dataset.m;$('#sl-m').value=S.mat;S.tab='ov';$$('#sl-tabs button').forEach(x=>x.setAttribute('aria-selected',x.dataset.v==='ov'));render();});
   }
@@ -1315,7 +1325,7 @@ function viewTrain(){
   function tabOv(C){
     const rows=[['WIDB',C.widb,[]],['AI Basics',C.ai,C.aip],['Copilot',C.cop,C.cpp]];
     const rw=C.people.filter(p=>p.role==='RWE').length,ss=C.people.length-rw;
-    const sjT=`<div class="blk"><h3>October target, WIDB trainings</h3><p class="note" style="margin:0">Not affected by the filters above.</p>${sjTargetHTML(1)}</div>`;
+    const sjT=`<div class="blk"><h3>November target, WIDB certifications</h3><p class="note" style="margin:0">Not affected by the filters above.</p>${sjnHTML(1)}<h3 style="margin:16px 0 4px;font-size:15px">October target, WIDB trainings (closed)</h3>${sjTargetHTML(1)}</div>`;
     $('#tr-body').innerHTML=sjT+kpis([{v:C.people.length,l:'RWEs and Sahelis mapped',d:rw+' RWE · '+ss+' SS'},{v:uq(C.widb),l:'WIDB trained (MAT app forms)',d:pct(uq(C.widb),C.people.length)+' of mapped · unique people'},{v:SJT.wcert,l:'WIDB certified (WIDB platform)',d:'to '+fdn(D.widb_asof)+' · '+SJT.wdone+' registered in Oct'},{v:uq(C.ai),l:'AI Basics completed',d:pct(uq(C.ai),C.people.length)+' · '+uq(C.aip)+' in progress'},{v:uq(C.cop),l:'Copilot completed',d:pct(uq(C.cop),C.people.length)+' · '+uq(C.cpp)+' in progress'},{v:C.widb.length,l:'WIDB sessions logged (MAT app forms)',d:'one entry per form, so can exceed people'},{v:uniq(C.widb.map(f=>f.vc)).length,l:'Villages with WIDB',d:'of '+D.sjv.length}])+`
     
     <div class="blk"><h3>Trainings by month</h3><div id="tr-mch"></div></div>`;
