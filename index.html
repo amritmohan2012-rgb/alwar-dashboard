@@ -689,12 +689,12 @@ function viewSales(){
     const tot=sum(A.tv,x=>x),T=targets(),meta=(()=>{let m=0,o=0;for(let i=0;i<NL;i++){const [r,,,p,b,,v]=L[i],R=RW[r];if(b!==0)continue;if(S.mat!=='All'&&R.m!==S.mat)continue;if(S.block!=='All'&&R.b!==S.block)continue;if(S.cat!=='All'&&pcatOf(p)!==S.cat)continue;if(S.mon!=='All'&&LM[i]!==+S.mon)continue;if(!dOK(i))continue;if(R.mm)m+=v;else o+=v;}return [m,o];})();
     const kp=[{v:inr(tot),l:'Total ordered',d:num(A.allO.size)+' orders'},{v:inr(A.tv[0]),l:'Total orders delivered',d:A.to[0].size+' orders · '+pct(A.tv[0],tot)},...(A.per?[{v:inr(A.dd.t),l:'Delivered in '+perLbl()+', by delivery date',d:A.dd.o.size+' orders, any order date'}]:[]),{v:inr(A.tv[1]),l:'Orders to be delivered',d:A.to[1].size+' orders'},
       {v:inr(A.tv[2]),l:'Hold',d:A.to[2].size+' orders'},{v:inr(A.tv[3]),l:'Rejected',d:A.to[3].size+' orders · '+pct(A.tv[3],tot)},{v:A.rset.size,l:'RWEs ordering',d:'of '+RW.length+' with any order'}];
-    const G=TGM[S.tm],TGT=G.t||SD.targets,ad=new Date(SD.asof+'T00:00:00'),rem=ad.getMonth()===S.tm+3&&ad.getFullYear()===2026?Math.max(0,G.dim-ad.getDate()):0;
+    const G=TGM[S.tm],TGT=G.t||SD.targets,ad=new Date(SD.asof+'T00:00:00'),rem=(()=>{let c=0;for(let d=1;d<=G.dim;d++){const iso='2026-'+String(S.tm+4).padStart(2,'0')+'-'+String(d).padStart(2,'0');if(iso>SD.asof&&new Date(iso+'T00:00:00').getDay()!==0&&!(S.tm===6&&(iso==='2026-10-02'||iso==='2026-10-20')))c++;}return c;})();
     const tg=Object.keys(TGT).map(k=>{const t=TGT[k],x=T[k],ach=S.tmode==='del'?x.d:x.d+x.p,gap=Math.max(0,t-ach);
       return `<div class="tgt"><div><b>${esc(k)}</b><br><small class="m">${SD.mapped[k]?num(SD.mapped[k])+' RWEs and Sahelis mapped':'No RWEs mapped yet in the mapping data'}</small></div>
         <div><div class="tbar"><i style="width:${Math.min(100,x.d/t*100)}%;background:#F7B133"></i><i style="left:${Math.min(100,x.d/t*100)}%;width:${S.tmode==='del'?0:Math.max(0,Math.min(100-x.d/t*100,x.p/t*100))}%;background:#9A6400"></i></div>
         <small class="m">Delivered ${inr(x.d)} · to be delivered ${inr(x.p)} · ${x.r.size} RWEs ordering${x.e?` · plus ${inr(x.e)} delivered in ${G.n.slice(0,3)} from earlier orders`:''}</small></div>
-        <div style="text-align:right"><b style="font-size:18px">${(ach/t*100).toFixed(1)}%</b> of ${inr(t)}<br><small class="m">Gap ${inr(gap)} · ${rem?'needs '+inr(gap/rem)+' a day for '+rem+' days':'month closed'}</small></div></div>`}).join('');
+        <div style="text-align:right"><b style="font-size:18px">${(ach/t*100).toFixed(1)}%</b> of ${inr(t)}<br><small class="m">Gap ${inr(gap)} · ${rem?'needs '+inr(gap/rem)+' a day for '+rem+' working days':'month closed'}</small></div></div>`}).join('');
     const tt=Object.keys(TGT).reduce((a,k)=>a+TGT[k],0),ta=Object.keys(TGT).reduce((a,k)=>a+(S.tmode==='del'?T[k].d:T[k].d+T[k].p),0);
     const per=S.mon!=='All'||rangeOn(S);
     let dw=0,dwn=new Set(),byM=[0,0,0,0,0,0,0,0,0];
