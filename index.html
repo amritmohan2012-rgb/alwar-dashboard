@@ -360,6 +360,7 @@ function bars(host,items,{fmt=num,max,click}={}){
 }
 /* grouped / stacked columns in SVG: every bar is labelled with its value */
 function cols(host,cats,series,{h=240,fmt=inr,stacked=false,legend=true,rot=false,every=0,table,noTotal=false}={}){
+  if(series.every(x=>(x.values||[]).every(v=>!v))){host.innerHTML='<p class="note" style="margin:12px 0">No data for this selection.</p>';return}
   const cw=host.clientWidth||600,W=Math.max(cw,300),pl=cw<520?42:52,pr=8,pb=rot?62:30,nC=cats.length,gw=(W-pl-pr)/nC;
   const tot=cats.map((_,i)=>stacked?sum(series,s=>Math.max(0,s.values[i]||0)):0);
   const vals=stacked?tot:series.flatMap(s=>s.values.map(v=>v||0));
