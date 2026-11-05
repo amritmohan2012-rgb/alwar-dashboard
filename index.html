@@ -722,7 +722,7 @@ function viewSales(){
   }
   function drawChart(A){
     const mp=A.ser[S.grain]; let keys=[...mp.keys()].sort((a,b)=>b-a);
-    if(S.grain==='month')keys=[6,5,4,3,2,1,0].filter(k=>(S.mon==='All'||k===+S.mon)&&(!S.df||k>=+S.df.slice(5,7)-4)&&(!S.dt||k<=+S.dt.slice(5,7)-4));
+    if(S.grain==='month')keys=[7,6,5,4,3,2,1,0].filter(k=>(S.mon==='All'||k===+S.mon)&&(!S.df||k>=+S.df.slice(5,7)-4)&&(!S.dt||k<=+S.dt.slice(5,7)-4));
     const lab=k=>S.grain==='month'?SMON[k]:S.grain==='week'?dstr(k*7-2<0?0:k*7-2):dstr(k);
     const get=(k)=>mp.get(k)||{v:[0,0,0,0],o:[new Set(),new Set(),new Set(),new Set()],r:new Set()};
     const host=$('#sl-chart');
